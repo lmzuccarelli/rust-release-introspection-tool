@@ -2,7 +2,7 @@
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(name = "rust-release-upgrade-path-tool")]
+#[command(name = "release-upgrade-path-tool")]
 #[command(author = "Luigi Mario Zuccarelli <luzuccar@redhat.com>")]
 #[command(version = "0.0.1")]
 #[command(about = "Used to find the upgrade path for eus releases (openshift specific)", long_about = None)]
@@ -31,4 +31,8 @@ pub struct Cli {
     /// set the loglevel. Valid arguments are info, debug, trace
     #[arg(value_enum, long, value_name = "loglevel", default_value = "info")]
     pub loglevel: Option<String>,
+
+    /// force-check if set will call the api to get the latest json payload
+    #[arg(short, long, value_name = "force-update", default_value = "false")]
+    pub force_update: bool,
 }

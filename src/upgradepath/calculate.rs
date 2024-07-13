@@ -108,7 +108,8 @@ impl Graph {
             .position(|x| x.version == last_version.to_string());
 
         let index: u32;
-        // needs verification : still a WIP
+
+        // find the index of the to_version
         if idx.is_none() {
             index = graphdata
                 .nodes
@@ -119,28 +120,6 @@ impl Graph {
             index = idx.unwrap() as u32;
         }
 
-        // search for risks using from = last_version and to = to_version
-        for edges in graphdata.conditional_edges.iter() {
-            for edge in edges.edges.iter() {
-                if edge.from == from_version && edge.to == last_version {
-                    for risk in edges.risks.iter() {
-                        log.lo(&format!("risk name    : {:#?}", risk.name));
-                        log.lo(&format!("risk message : {:#?}", risk.message));
-                    }
-                }
-            }
-        }
-
-        let mut upgrade_list = graphdata
-            .edges
-            .iter()
-            .filter(|x| x[0] == index)
-            .map(|x| Version::parse(&graphdata.nodes[x[1] as usize].version).unwrap())
-            .collect::<Vec<Version>>();
-
-        upgrade_list.push(Version::parse(&from_version).unwrap());
-        upgrade_list.push(Version::parse(&last_version).unwrap());
-
         // find the head
         let head = graphdata
             .nodes
@@ -149,12 +128,54 @@ impl Graph {
             .max()
             .unwrap();
 
-        // check the to_version against the head
-        if head.gt(&Version::parse(&to_version).unwrap()) {
-            upgrade_list.push(Version::parse(&to_version).unwrap());
+        let mut upgrade_list = graphdata
+            .edges
+            .iter()
+            .filter(|x| x[0] == index)
+            .map(|x| Version::parse(&graphdata.nodes[x[1] as usize].version).unwrap())
+            .collect::<Vec<Version>>();
+
+        upgrade_list.push(Version::parse(&last_version).unwrap());
+        log.debug(&format!("upgrade list {:#?}", upgrade_list));
+
+        // check risks and update to exclude vector
+        let mut to_exclude: Vec<Version> = vec![];
+
+        for edges in graphdata.conditional_edges.iter() {
+            for edge in edges.edges.iter() {
+                // work out risks
+                if edge.from == from_version && edge.to == last_version {
+                    for risk in edges.risks.iter() {
+                        log.lo(&format!("risk name    : {:#?}", risk.name));
+                        log.lo(&format!("risk message : {:#?}", risk.message));
+                    }
+                }
+                // iterate upgrade_list to see if there is a path to the head
+                for item in upgrade_list.iter() {
+                    if edge.from == item.to_string() && edge.to == head.to_string() {
+                        to_exclude.insert(0, item.clone())
+                    }
+                }
+            }
         }
 
-        upgrade_list.sort();
+        let exclude_head = to_exclude.iter().max().unwrap().clone();
+        let head_pos = to_exclude
+            .iter()
+            .position(|x| x.eq(&exclude_head.clone()))
+            .unwrap();
+        to_exclude.remove(head_pos.clone());
+        log.debug(&format!("exclude head version {:#?}", exclude_head));
+        log.debug(&format!("version/s to exclude {:#?}", to_exclude));
+        upgrade_list.push(Version::parse(&from_version).unwrap());
+        upgrade_list.push(head);
+
+        for rm in to_exclude.iter() {
+            let pos = upgrade_list.iter().position(|x| x.eq(rm)).unwrap();
+            upgrade_list.remove(pos);
+        }
+
+        log.info(&format!("upgrade list {:#?}", upgrade_list));
 
         // finally look up the image references (for v3)
         for node in graphdata.nodes.iter() {

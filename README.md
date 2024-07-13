@@ -29,7 +29,7 @@ mkdir contianer && chmod 755 container
 make build 
 
 # this will generate imagesetconfiguration files for v2 (oc-mirror) and v3 (rust-image-mirror) tools
-./target/release/rust-release-introspection-tool --from-version 4.12.28 --to-version 4.14.16 --channel eus-4.14 --arch amd64 --loglevel debug --graph
+./target/release/rust-release-introspection-tool --from-version 4.12.28 --to-version 4.14.16 --channel eus-4.14 --arch amd64 --loglevel debug --graph --force-update
 
 ```
 The output (with loglevel debug) will show the following resultant imagesetconfiguration for v3 

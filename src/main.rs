@@ -3,7 +3,6 @@ use clap::Parser;
 use custom_logger::*;
 use semver::Version;
 use std::fs;
-use std::path::Path;
 
 mod api;
 mod buildah;
@@ -39,6 +38,7 @@ async fn main() {
     let arch = args.arch.to_string();
     let channel = args.channel.to_string();
     let level = args.loglevel.unwrap().to_string();
+    let force_update = args.force_update;
     let graph = args.graph;
 
     // convert to enum
@@ -62,16 +62,21 @@ async fn main() {
     let json_data: String;
 
     // first check if we have this json on disk
-    if Path::new(&file_name.clone()).exists() {
-        json_data = fs::read_to_string(file_name).expect("unable to read file");
-    } else {
+    if force_update {
+        log.info("force-update detected executing https api request");
         let url = format!(
-        "https://api.openshift.com/api/upgrades_info/v1/graph?arch={}&channel={}&id=dfb7d530-e876-425b-80b7-374ba5800525&version={}",arch,channel,from_version);
+            "https://api.openshift.com/api/upgrades_info/v1/graph?arch={}&channel={}&version={}",
+            arch, channel, from_version
+        );
         // setup the request interface
         let g_con = ImplUpgradePathInterface {};
         json_data = g_con.get_graphdata(url.clone()).await.unwrap();
         // we can now save the json to file
-        fs::write(file_name, json_data.clone()).expect("unable to write file");
+        fs::write(file_name.clone(), json_data.clone()).expect("unable to write file json payload");
+    } else {
+        log.info("reading from cache");
+        json_data =
+            fs::read_to_string(file_name.clone()).expect("unable to read json payload file");
     }
 
     if graph {
