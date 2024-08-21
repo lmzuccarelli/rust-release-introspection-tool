@@ -3,6 +3,7 @@ use clap::Parser;
 use custom_logger::*;
 use semver::Version;
 use std::fs;
+use std::process;
 
 mod api;
 mod buildah;
@@ -56,10 +57,10 @@ async fn main() {
 
     log.info(&format!("from_version: {}", from_version));
     log.info(&format!("to_version: {}", to_version));
-    log.info(&format!("arch: {:#?}", arch.clone()));
+    log.info(&format!("arch: {}", arch.clone()));
 
     let file_name = format!("cache/{}_{}.json", channel, arch);
-    let json_data: String;
+    let mut json_data: String = String::new();
 
     // first check if we have this json on disk
     if force_update {
@@ -70,13 +71,25 @@ async fn main() {
         );
         // setup the request interface
         let g_con = ImplUpgradePathInterface {};
-        json_data = g_con.get_graphdata(url.clone()).await.unwrap();
-        // we can now save the json to file
-        fs::write(file_name.clone(), json_data.clone()).expect("unable to write file json payload");
+        let res = g_con.get_graphdata(url.clone()).await;
+        if res.is_ok() {
+            json_data = res.unwrap();
+            // we can now save the json to file
+            fs::write(file_name.clone(), json_data.clone())
+                .expect("unable to write file json payload");
+        }
     } else {
         log.info("reading from cache");
-        json_data =
-            fs::read_to_string(file_name.clone()).expect("unable to read json payload file");
+        let res = fs::read_to_string(file_name.clone());
+        if res.is_ok() {
+            json_data = res.unwrap();
+        } else {
+            log.error(&format!(
+                "file not found {} (use the --force-update flag to download it)",
+                file_name.clone()
+            ));
+            process::exit(1);
+        }
     }
 
     if graph {

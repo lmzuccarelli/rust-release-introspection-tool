@@ -4,7 +4,7 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(name = "release-upgrade-path-tool")]
 #[command(author = "Luigi Mario Zuccarelli <luzuccar@redhat.com>")]
-#[command(version = "0.0.1")]
+#[command(version = "0.1.0")]
 #[command(about = "Used to find the upgrade path for eus releases (openshift specific)", long_about = None)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {

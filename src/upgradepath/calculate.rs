@@ -90,7 +90,8 @@ impl Graph {
         }
 
         to.sort();
-        log.lo(&format!("list : {:#?}", to.len()));
+        log.lo(&format!("list length : {}", to.len()));
+        log.trace(&format!("list        : {:#?}", to));
 
         if to.len() == 0 {
             return vec![UpgradeResult {
@@ -136,7 +137,6 @@ impl Graph {
             .collect::<Vec<Version>>();
 
         upgrade_list.push(Version::parse(&last_version).unwrap());
-        log.debug(&format!("upgrade list {:#?}", upgrade_list));
 
         // check risks and update to exclude vector
         let mut to_exclude: Vec<Version> = vec![];
@@ -159,27 +159,36 @@ impl Graph {
             }
         }
 
-        let exclude_head = to_exclude.iter().max().unwrap().clone();
-        let head_pos = to_exclude
-            .iter()
-            .position(|x| x.eq(&exclude_head.clone()))
-            .unwrap();
-        to_exclude.remove(head_pos.clone());
-        log.debug(&format!("exclude head version {:#?}", exclude_head));
-        log.debug(&format!("version/s to exclude {:#?}", to_exclude));
-        upgrade_list.push(Version::parse(&from_version).unwrap());
-        upgrade_list.push(head);
+        if to_exclude.len() > 0 {
+            let exclude_head = to_exclude.iter().max().unwrap().clone();
+            let head_pos = to_exclude
+                .iter()
+                .position(|x| x.eq(&exclude_head.clone()))
+                .unwrap();
+            to_exclude.remove(head_pos.clone());
+            log.debug(&format!("exclude head version {:#?}", exclude_head));
+            log.debug(&format!("version/s to exclude {:#?}", to_exclude));
+            upgrade_list.push(Version::parse(&from_version).unwrap());
+            upgrade_list.push(head);
 
-        for rm in to_exclude.iter() {
-            let pos = upgrade_list.iter().position(|x| x.eq(rm)).unwrap();
-            upgrade_list.remove(pos);
+            for rm in to_exclude.iter() {
+                let pos = upgrade_list.iter().position(|x| x.eq(rm)).unwrap();
+                upgrade_list.remove(pos);
+            }
+            log.trace(&format!("upgrade list {:#?}", upgrade_list));
         }
 
-        log.info(&format!("upgrade list {:#?}", upgrade_list));
+        let mut dedup_upgrade_list = vec![];
+        for item in upgrade_list.iter() {
+            if !dedup_upgrade_list.contains(item) {
+                dedup_upgrade_list.insert(0, item.clone());
+            }
+        }
+        log.trace(&format!("dedup upgrade list {:#?}", dedup_upgrade_list));
 
         // finally look up the image references (for v3)
         for node in graphdata.nodes.iter() {
-            for version in upgrade_list.iter() {
+            for version in dedup_upgrade_list.iter() {
                 if node.version == version.to_string() {
                     match &node.payload {
                         Some(image) => {
@@ -196,7 +205,12 @@ impl Graph {
                 }
             }
         }
-        upgrade_images.sort_by(|a, b| a.version.cmp(&b.version));
+        upgrade_images.sort_by(|a, b| {
+            Version::parse(&a.version)
+                .unwrap()
+                .cmp(&Version::parse(&b.version).unwrap())
+        });
+        log.trace(&format!("sorted final list {:#?}", upgrade_images));
         upgrade_images
     }
 }
