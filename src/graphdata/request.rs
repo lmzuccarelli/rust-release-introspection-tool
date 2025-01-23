@@ -6,6 +6,7 @@ use std::io::Cursor;
 pub struct ImplUpgradePathInterface {}
 
 #[async_trait]
+#[allow(unused)]
 pub trait UpgradePathInterface {
     // used to interact with cincinnati api
     async fn get_graphdata(&self, url: String) -> Result<String, Box<dyn std::error::Error>>;

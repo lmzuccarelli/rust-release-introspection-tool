@@ -24,7 +24,7 @@ cd rust-release-introspection-tool
 
 # create a directory called cache
 mkdir cache && chmod 755 cache
-mkdir contianer && chmod 755 container
+mkdir container && chmod 755 container
 
 make build 
 

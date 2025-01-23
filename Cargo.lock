@@ -615,6 +615,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "mirror-error"
+version = "0.1.0"
+source = "git+https://github.com/lmzuccarelli/rust-mirror-error?branch=main#9d9c5dd348f3ab9168d20e266c5ec3b07f7f3851"
+
+[[package]]
 name = "native-tls"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -792,6 +797,7 @@ dependencies = [
  "clap",
  "custom-logger",
  "flate2",
+ "mirror-error",
  "reqwest",
  "semver",
  "serde",

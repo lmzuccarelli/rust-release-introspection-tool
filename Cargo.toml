@@ -19,6 +19,7 @@ tar = "0.4.38"
 
 # github libraries
 custom-logger = { git = "https://github.com/lmzuccarelli/rust-custom-logger", branch = "main", version = "0.1.4" }
+mirror-error = { git = "https://github.com/lmzuccarelli/rust-mirror-error", branch = "main", version = "0.1.0" }
 tracing = "0.1.40"
 
 [profile.release]

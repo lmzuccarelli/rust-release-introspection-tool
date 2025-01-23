@@ -6,14 +6,14 @@ use std::fs;
 use std::process;
 
 mod api;
-mod buildah;
 mod graphdata;
 mod isc;
+mod podman;
 mod upgradepath;
 
 use api::schema::*;
-use buildah::build_image::*;
 use isc::generate::*;
+use podman::process::*;
 use upgradepath::calculate::*;
 
 // main entry point (use async)
@@ -93,7 +93,15 @@ async fn main() {
     }
 
     if graph {
-        build_image().await;
+        let res = build(
+            log,
+            "graph-image:latest".to_string(),
+            "containerfile".to_string(),
+        )
+        .await;
+        if res.is_err() {
+            process::exit(1);
+        }
     }
 
     // parse and calculate the upgrade path
