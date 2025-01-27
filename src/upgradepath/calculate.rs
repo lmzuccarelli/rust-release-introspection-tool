@@ -109,6 +109,11 @@ impl Graph {
             .position(|x| x.version == last_version.to_string());
 
         let index: u32;
+        let from_index = graphdata
+            .nodes
+            .iter()
+            .position(|x| x.version == from_version)
+            .unwrap() as u32;
 
         // find the index of the to_version
         if idx.is_none() {
@@ -120,6 +125,9 @@ impl Graph {
         } else {
             index = idx.unwrap() as u32;
         }
+
+        log.trace(&format!("index of from_version {}", from_index));
+        log.trace(&format!("index of to_version {}", index));
 
         // find the head
         let head = graphdata
@@ -159,24 +167,38 @@ impl Graph {
             }
         }
 
-        if to_exclude.len() > 0 {
-            let exclude_head = to_exclude.iter().max().unwrap().clone();
-            let head_pos = to_exclude
-                .iter()
-                .position(|x| x.eq(&exclude_head.clone()))
-                .unwrap();
-            to_exclude.remove(head_pos.clone());
-            log.debug(&format!("exclude head version {:#?}", exclude_head));
-            log.debug(&format!("version/s to exclude {:#?}", to_exclude));
-            upgrade_list.push(Version::parse(&from_version).unwrap());
-            upgrade_list.push(head);
+        // find the head position
+        let head_pos = graphdata
+            .nodes
+            .iter()
+            .position(|x| x.version == head.to_string())
+            .unwrap();
+        log.debug(&format!("head_pos {}", head_pos));
 
-            for rm in to_exclude.iter() {
+        // check if there is a path for each remaining node to the head
+        for rm in upgrade_list.clone().iter() {
+            let current_idx = graphdata
+                .nodes
+                .iter()
+                .position(|x| x.version == rm.to_string())
+                .unwrap() as u32;
+
+            log.debug(&format!("current_idx {}", current_idx));
+            let path_exists = graphdata
+                .edges
+                .iter()
+                .filter(|x| x[0] == current_idx && x[1] == head_pos as u32)
+                .count();
+
+            log.debug(&format!("path exists {} {}", path_exists, current_idx));
+
+            if path_exists > 0 {
                 let pos = upgrade_list.iter().position(|x| x.eq(rm)).unwrap();
                 upgrade_list.remove(pos);
             }
-            log.trace(&format!("upgrade list {:#?}", upgrade_list));
         }
+        log.trace(&format!("upgrade list {:#?}", upgrade_list));
+        //}
 
         let mut dedup_upgrade_list = vec![];
         for item in upgrade_list.iter() {
